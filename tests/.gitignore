@@ -3,6 +3,8 @@
 !snapshots/
 !fusion/
 !llama-context/
+!pi05/
+!pi05/**
 *.o
 ggml-common.h
 **/*.swp
