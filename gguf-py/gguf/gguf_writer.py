@@ -725,6 +725,33 @@ class GGUFWriter:
     def add_block_count(self, length: int) -> None:
         self.add_uint32(Keys.LLM.BLOCK_COUNT.format(arch=self.arch), length)
 
+    def add_variant(self, value: str) -> None:
+        self.add_string(Keys.LLM.VARIANT.format(arch=self.arch), value)
+
+    def add_action_expert_embedding_length(self, length: int) -> None:
+        self.add_uint32(Keys.LLM.ACTION_EXPERT_EMBEDDING_LENGTH.format(arch=self.arch), length)
+
+    def add_action_expert_feed_forward_length(self, length: int) -> None:
+        self.add_uint32(Keys.LLM.ACTION_EXPERT_FEED_FORWARD_LENGTH.format(arch=self.arch), length)
+
+    def add_action_expert_block_count(self, count: int) -> None:
+        self.add_uint32(Keys.LLM.ACTION_EXPERT_BLOCK_COUNT.format(arch=self.arch), count)
+
+    def add_inference_step_count(self, count: int) -> None:
+        self.add_uint32(Keys.LLM.INFERENCE_STEP_COUNT.format(arch=self.arch), count)
+
+    def add_action_step_count(self, count: int) -> None:
+        self.add_uint32(Keys.LLM.ACTION_STEP_COUNT.format(arch=self.arch), count)
+
+    def add_state_dimension(self, length: int) -> None:
+        self.add_uint32(Keys.LLM.STATE_DIMENSION.format(arch=self.arch), length)
+
+    def add_action_dimension(self, length: int) -> None:
+        self.add_uint32(Keys.LLM.ACTION_DIMENSION.format(arch=self.arch), length)
+
+    def add_vision_input_count(self, count: int) -> None:
+        self.add_uint32(Keys.LLM.VISION_INPUT_COUNT.format(arch=self.arch), count)
+
     def add_leading_dense_block_count(self, length: int) -> None:
         self.add_uint32(Keys.LLM.LEADING_DENSE_BLOCK_COUNT.format(arch=self.arch), length)
 

@@ -1,6 +1,6 @@
 # vla_jeston：基于 llama.cpp 的 π0.5 端侧 VLA 部署与优化
 
-> 当前状态：项目规划与基线搭建阶段。
+> 当前状态：P0 模型 Contract 已完成；P2 双 GGUF 转换器已通过结构 Dry-run，等待真实 PaliGemma tokenizer 和 Runtime Loader 验证。
 >
 > 开发分支：`feature/pi05-deployment`。
 >
@@ -13,7 +13,7 @@
 ## 一、端到端执行链
 
 ```text
-双路相机图像 + 文本指令 + 机器人状态
+三路相机图像 + 文本指令 + 机器人状态
                     |
                     v
           图像预处理与 Prompt 构造
@@ -57,7 +57,7 @@
 预计涉及：
 
 ```text
-conversion/models/pi05.py
+conversion/pi05.py
 gguf-py/gguf/constants.py
 gguf-py/gguf/tensor_mapping.py
 ```
@@ -91,7 +91,7 @@ src/models/pi05.cpp
 
 主要任务：
 
-- 按照 OpenPI 规则处理两路相机图像的 resize、crop 和 normalize。
+- 按照 OpenPI 规则处理固定视角、左腕和右腕三路相机图像的 resize、crop 和 normalize；每路输入形状为 `3 x 224 x 224`。
 - 保持正确的图像 Token 顺序和位置编码。
 - 使用与参考实现一致的文本指令模板。
 - 将 Vision 特征投影到策略 Backbone。

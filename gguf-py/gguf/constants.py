@@ -168,6 +168,15 @@ class Keys:
         TARGET_LAYERS                     = "{arch}.target_layers"
         TARGET_HIDDEN_SIZE                = "{arch}.target_hidden_size"
         BLOCK_SIZE                        = "{arch}.block_size"
+        VARIANT                           = "{arch}.variant"
+        ACTION_EXPERT_EMBEDDING_LENGTH    = "{arch}.action_expert.embedding_length"
+        ACTION_EXPERT_FEED_FORWARD_LENGTH = "{arch}.action_expert.feed_forward_length"
+        ACTION_EXPERT_BLOCK_COUNT         = "{arch}.action_expert.block_count"
+        INFERENCE_STEP_COUNT              = "{arch}.inference_step_count"
+        ACTION_STEP_COUNT                 = "{arch}.action_step_count"
+        STATE_DIMENSION                   = "{arch}.state_dimension"
+        ACTION_DIMENSION                  = "{arch}.action_dimension"
+        VISION_INPUT_COUNT                = "{arch}.vision_input_count"
         CONV_KERNEL_SIZE                  = "{arch}.conv_kernel_size"
         CONV_GROUP_SIZE                   = "{arch}.conv_group_size"
         SELECTOR_RANK                     = "{arch}.selector_rank"
@@ -741,6 +750,7 @@ class MODEL_ARCH(IntEnum):
     K2HORIZON        = auto()
     KOLIBRI1         = auto()
     LIMITE           = auto()
+    PI0              = auto()
 
 
 class VISION_PROJECTOR_TYPE(IntEnum):
@@ -1091,6 +1101,7 @@ class MODEL_TENSOR(IntEnum):
     V_MM_POST_NORM       = auto()
     V_MM_INP_NORM        = auto()
     V_MM_INP_PROJ        = auto() # gemma3
+    V_PI0_PROJ           = auto()
     V_MM_SOFT_EMB_NORM   = auto() # gemma3
     V_MM_EMBEDDING       = auto() # gemma3n
     V_MM_HARD_EMB_NORM   = auto() # gemma3n
@@ -1430,6 +1441,14 @@ class MODEL_TENSOR(IntEnum):
     A_QF_FFN_UP            = auto()
     A_QF_FFN_DOWN          = auto()
     A_QF_FFN_NORM          = auto()
+    # PI0/PI0.5 policy tensors
+    ACTION_IN               = auto()
+    ACTION_OUT              = auto()
+    TIME_MLP_IN             = auto()
+    TIME_MLP_OUT            = auto()
+    AE_OUTPUT_NORM_DENSE    = auto()
+    ATTN_NORM_DENSE         = auto()
+    FFN_NORM_DENSE          = auto()
 
 
 MODEL_ARCH_NAMES: dict[MODEL_ARCH, str] = {
@@ -1600,6 +1619,7 @@ MODEL_ARCH_NAMES: dict[MODEL_ARCH, str] = {
     MODEL_ARCH.K2HORIZON:        "k2-horizon",
     MODEL_ARCH.KOLIBRI1:         "kolibri1",
     MODEL_ARCH.LIMITE:           "limite",
+    MODEL_ARCH.PI0:              "pi0",
 }
 
 VISION_PROJECTOR_TYPE_NAMES: dict[VISION_PROJECTOR_TYPE, str] = {
@@ -1633,6 +1653,13 @@ TENSOR_NAMES: dict[MODEL_TENSOR, str] = {
     MODEL_TENSOR.HC_HEAD_NORM:              "output_hc_norm",                 # qwen4exp
     MODEL_TENSOR.HC_HEAD_DOWN:              "output_hc_down",                 # qwen4exp
     MODEL_TENSOR.HC_HEAD_UP:                "output_hc_up",                   # qwen4exp
+    MODEL_TENSOR.ACTION_IN:                 "action_in_proj",
+    MODEL_TENSOR.ACTION_OUT:                "action_out_proj",
+    MODEL_TENSOR.TIME_MLP_IN:               "time_mlp_in",
+    MODEL_TENSOR.TIME_MLP_OUT:              "time_mlp_out",
+    MODEL_TENSOR.AE_OUTPUT_NORM_DENSE:      "output_norm_dense",
+    MODEL_TENSOR.ATTN_NORM_DENSE:           "blk.{bid}.attn_norm_dense",
+    MODEL_TENSOR.FFN_NORM_DENSE:            "blk.{bid}.ffn_norm_dense",
     MODEL_TENSOR.ROPE_FREQS:                "rope_freqs",
     MODEL_TENSOR.ROPE_FACTORS_LONG:         "rope_factors_long",
     MODEL_TENSOR.ROPE_FACTORS_SHORT:        "rope_factors_short",
@@ -1944,6 +1971,7 @@ TENSOR_NAMES: dict[MODEL_TENSOR, str] = {
     MODEL_TENSOR.V_POST_NORM:               "v.post_ln",
     MODEL_TENSOR.V_MM_POST_NORM:            "mm.post_norm",
     MODEL_TENSOR.V_MM_INP_PROJ:             "mm.input_projection",
+    MODEL_TENSOR.V_PI0_PROJ:                "mm.linear",
     MODEL_TENSOR.V_MM_INP_NORM:             "mm.input_norm",
     MODEL_TENSOR.V_MM_SOFT_EMB_NORM:        "mm.soft_emb_norm",         # gemma3n
     MODEL_TENSOR.V_MM_EMBEDDING:            "mm.embedding",             # gemma3n
@@ -2324,6 +2352,7 @@ MODEL_TENSORS: dict[MODEL_ARCH, list[MODEL_TENSOR]] = {
         MODEL_TENSOR.V_POST_NORM,
         MODEL_TENSOR.V_MM_POST_NORM,
         MODEL_TENSOR.V_MM_INP_PROJ,
+        MODEL_TENSOR.V_PI0_PROJ,
         MODEL_TENSOR.V_MM_INP_NORM,
         MODEL_TENSOR.V_MM_SOFT_EMB_NORM,
         MODEL_TENSOR.V_MM_EMBEDDING,
@@ -6379,6 +6408,25 @@ MODEL_TENSORS: dict[MODEL_ARCH, list[MODEL_TENSOR]] = {
         MODEL_TENSOR.MUDD_DOWN,
         MODEL_TENSOR.MUDD_UP,
     ],
+    MODEL_ARCH.PI0: [
+        MODEL_TENSOR.TOKEN_EMBD,
+        MODEL_TENSOR.ATTN_NORM,
+        MODEL_TENSOR.ATTN_Q,
+        MODEL_TENSOR.ATTN_K,
+        MODEL_TENSOR.ATTN_V,
+        MODEL_TENSOR.ATTN_OUT,
+        MODEL_TENSOR.FFN_NORM,
+        MODEL_TENSOR.FFN_GATE,
+        MODEL_TENSOR.FFN_DOWN,
+        MODEL_TENSOR.FFN_UP,
+        MODEL_TENSOR.ACTION_IN,
+        MODEL_TENSOR.ACTION_OUT,
+        MODEL_TENSOR.TIME_MLP_IN,
+        MODEL_TENSOR.TIME_MLP_OUT,
+        MODEL_TENSOR.AE_OUTPUT_NORM_DENSE,
+        MODEL_TENSOR.ATTN_NORM_DENSE,
+        MODEL_TENSOR.FFN_NORM_DENSE,
+    ],
 }
 
 # tensors that will not be serialized
@@ -6645,6 +6693,7 @@ class DecisionType:
 
 
 class VisionProjectorType:
+    PI0 = "pi0"
     GEMMA3 = "gemma3"
     GEMMA3NV = "gemma3nv"
     GEMMA3NA = "gemma3na"
